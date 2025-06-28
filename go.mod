@@ -1,4 +1,4 @@
-module gitlab.com/andreashdez/n_queens_problem_go
+module github.com/andreashdez/n_queens_problem_go
 
 go 1.24
 

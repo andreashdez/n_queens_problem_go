@@ -8,9 +8,9 @@ import (
 func DrawBoard(positions []int, conflicts []int) {
 	size := len(positions)
 	drawRowTop(size)
-	for y := 0; y < size; y++ {
+	for y := range size {
 		fmt.Print("║ ")
-		for x := 0; x < size; x++ {
+		for x := range size {
 			yPosition := positions[x]
 			if yPosition == y {
 				currentConflicts := conflicts[x]

@@ -25,7 +25,7 @@ func main() {
 	}
 
 	log.Info().Msg("start n_queens_problem")
-	ga := BuildGeneticAlgorithm(16, 40)
+	ga := BuildGeneticAlgorithm(10, 40000)
 	log.Info().Msg("done building genetic algorithm")
 	bestChromosome := ga.RunAlgorithm()
 

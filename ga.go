@@ -65,7 +65,7 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 		Int("mateAmount", mateAmount).
 		Float64("fitnessSum", fitnessSum).
 		Msg("mate random chromosomes")
-	for i := 0; i < mateAmount; i++ {
+	for range mateAmount {
 		parentOne := ga.selectRandomChromosome(fitnessSum)
 		parentTwo := ga.selectRandomChromosome(fitnessSum)
 		child := ga.mateChromosomes(*parentOne, *parentTwo)
@@ -107,7 +107,7 @@ func (ga GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 		Int("pointTwo", pointTwo).
 		Msg("partially mapped crossover")
 	var childGenes = make([]int, chromosomeSize)
-	for i := 0; i < chromosomeSize; i++ {
+	for i := range chromosomeSize {
 		if i >= pointOne && i < pointTwo {
 			childGenes[i] = parentOne[i]
 		} else {
@@ -128,7 +128,7 @@ func (ga GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 		Trace().
 		Ints("childGenes", childGenes).
 		Msg("generating child (step 2)")
-	for i := 0; i < chromosomeSize; i++ {
+	for i := range chromosomeSize {
 		if childGenes[i] == -1 {
 			childGenes[i] = parentTwo[i]
 		}
@@ -142,7 +142,7 @@ func (ga GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 
 func findPosition(index int, parentOne []int, parentTwo []int, child []int) int {
 	position := -1
-	for i := 0; i < len(parentOne); i++ {
+	for i := range parentOne {
 		if parentTwo[i] == parentOne[index] {
 			position = i
 			break
@@ -171,7 +171,7 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 		if bestConflictsSum == 0 {
 			return ga.getBestChromosome()
 		}
-		if epochCounter > 50000 {
+		if epochCounter > 5000 {
 			return ga.getBestChromosome()
 		}
 	}
@@ -179,7 +179,7 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 
 func BuildGeneticAlgorithm(size int, initialPopulation int) GeneticAlgorithm {
 	population := make([]Chromosome, initialPopulation)
-	for i := 0; i < initialPopulation; i++ {
+	for i := range initialPopulation {
 		positions := GenerateDistinctRandomValues(size)
 		chromosome := NewChromosome(positions)
 		population[i] = *chromosome

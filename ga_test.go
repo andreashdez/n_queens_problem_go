@@ -104,3 +104,24 @@ func TestMutateGenesRateOneSwapsTwoValues(t *testing.T) {
 		t.Fatalf("mutation changed gene set, got %v want permutation of %v", genes, before)
 	}
 }
+
+func TestPMXReturnsPermutation(t *testing.T) {
+	ga := GeneticAlgorithm{}
+	parentOne := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	parentTwo := []int{7, 6, 5, 4, 3, 2, 1, 0}
+	want := append([]int(nil), parentOne...)
+	slices.Sort(want)
+
+	for i := 0; i < 100; i++ {
+		rand.Seed(int64(i + 1))
+		child := ga.pmx(parentOne, parentTwo)
+		if len(child) != len(parentOne) {
+			t.Fatalf("pmx child len = %d, want %d", len(child), len(parentOne))
+		}
+		got := append([]int(nil), child...)
+		slices.Sort(got)
+		if !slices.Equal(got, want) {
+			t.Fatalf("pmx child is not a permutation: %v", child)
+		}
+	}
+}

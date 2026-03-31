@@ -170,15 +170,21 @@ func (ga *GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 	chromosomeHalfSize := chromosomeSize / 2
 	pointOne := rand.Intn(chromosomeHalfSize)
 	pointTwo := rand.Intn(chromosomeSize-chromosomeHalfSize) + chromosomeHalfSize
+	parentTwoIndex := make([]int, chromosomeSize)
+	for i, value := range parentTwo {
+		parentTwoIndex[value] = i
+	}
 	log.
 		Trace().
 		Int("pointOne", pointOne).
 		Int("pointTwo", pointTwo).
 		Msg("partially mapped crossover")
 	var childGenes = make([]int, chromosomeSize)
+	presentGenes := make([]bool, chromosomeSize)
 	for i := range chromosomeSize {
 		if i >= pointOne && i < pointTwo {
 			childGenes[i] = parentOne[i]
+			presentGenes[parentOne[i]] = true
 		} else {
 			childGenes[i] = -1
 		}
@@ -188,9 +194,11 @@ func (ga *GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 		Ints("childGenes", childGenes).
 		Msg("generating child (step 1)")
 	for i := pointOne; i < pointTwo; i++ {
-		if !slices.Contains(childGenes, parentTwo[i]) {
-			position := findPosition(i, parentOne, parentTwo, childGenes)
-			childGenes[position] = parentTwo[i]
+		candidateGene := parentTwo[i]
+		if !presentGenes[candidateGene] {
+			position := findPosition(i, parentOne, childGenes, parentTwoIndex)
+			childGenes[position] = candidateGene
+			presentGenes[candidateGene] = true
 		}
 	}
 	log.
@@ -209,18 +217,16 @@ func (ga *GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 	return childGenes
 }
 
-func findPosition(index int, parentOne []int, parentTwo []int, child []int) int {
-	position := -1
-	for i := range parentOne {
-		if parentTwo[i] == parentOne[index] {
-			position = i
-			break
+func findPosition(index int, parentOne []int, child []int, parentTwoIndex []int) int {
+	position := index
+	for {
+		mappedValue := parentOne[position]
+		nextPosition := parentTwoIndex[mappedValue]
+		if child[nextPosition] == -1 {
+			return nextPosition
 		}
+		position = nextPosition
 	}
-	if child[position] != -1 {
-		return findPosition(position, parentOne, parentTwo, child)
-	}
-	return position
 }
 
 func (ga *GeneticAlgorithm) RunAlgorithm() Chromosome {

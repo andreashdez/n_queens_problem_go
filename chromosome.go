@@ -2,7 +2,6 @@ package main
 
 import (
 	"math/rand"
-	"strconv"
 
 	"github.com/rs/zerolog/log"
 )
@@ -36,20 +35,27 @@ func GenerateDistinctRandomValues(size int) []int {
 func countConflicts(positions []int) []int {
 	size := len(positions)
 	conflicts := make([]int, size)
-	for xTwo := 0; xTwo < size-1; xTwo++ {
-		for xOne := xTwo + 1; xOne < size; xOne++ {
-			distance := xOne - xTwo
-			yOne := positions[xOne]
-			yTwo := positions[xTwo]
-			if diff(yOne, yTwo) == distance {
-				log.
-					Trace().
-					Str("chromosomeOne", "("+strconv.Itoa(xOne)+","+strconv.Itoa(yOne)+")").
-					Str("chromosomeTwo", "("+strconv.Itoa(xTwo)+","+strconv.Itoa(yTwo)+")").
-					Msg("found conflicts")
-				conflicts[xOne] += 1
-				conflicts[xTwo] += 1
-			}
+	diagonalCount := size*2 - 1
+	mainDiagonalCounts := make([]int, diagonalCount)
+	antiDiagonalCounts := make([]int, diagonalCount)
+	diagonalOffset := size - 1
+
+	for x, y := range positions {
+		mainDiagonalCounts[x-y+diagonalOffset]++
+		antiDiagonalCounts[x+y]++
+	}
+
+	for x, y := range positions {
+		mainDiagonalConflicts := mainDiagonalCounts[x-y+diagonalOffset] - 1
+		antiDiagonalConflicts := antiDiagonalCounts[x+y] - 1
+		conflicts[x] = mainDiagonalConflicts + antiDiagonalConflicts
+		if conflicts[x] > 0 {
+			log.
+				Trace().
+				Int("x", x).
+				Int("y", y).
+				Int("conflicts", conflicts[x]).
+				Msg("found conflicts")
 		}
 	}
 	return conflicts
@@ -61,11 +67,4 @@ func sumConflicts(conflicts []int) int {
 		conflictsSum += c
 	}
 	return conflictsSum / 2
-}
-
-func diff(one int, two int) int {
-	if one > two {
-		return one - two
-	}
-	return two - one
 }

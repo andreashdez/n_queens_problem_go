@@ -1,8 +1,60 @@
-# N-Queens Problem
+# N-Queens Problem (Go + Genetic Algorithm)
 
-A simple implementation of the N-Queens Problem using Genetic Algorithms to find a solution.
+This project solves the N-Queens puzzle with a genetic algorithm.
 
-An example of a standard sized (8x8) chess board with 8 queens placed on it without conflicts with each other:
+- A chromosome is a permutation of row positions (one queen per column).
+- Fitness is based on diagonal conflicts (lower is better, `0` is solved).
+- The solver uses roulette selection, PMX crossover, optional mutation, and bounded population trimming.
+
+## Requirements
+
+- Go `1.26+`
+
+## Quick Start
+
+```bash
+go run .
+```
+
+Run with custom parameters:
+
+```bash
+go run . -size 8 -population 1000 -max-epochs 1000 -min-to-mate 5 -max-to-mate 20 -mutation-rate 0.05 -seed 1234
+```
+
+## CLI Flags
+
+| Flag             | Default | Description                                         |
+| ---------------- | ------- | --------------------------------------------------- |
+| `-size`          | `14`    | Number of queens and board size                     |
+| `-population`    | `40000` | Initial population size                             |
+| `-max-epochs`    | `5000`  | Maximum epochs before stopping                      |
+| `-min-to-mate`   | `10`    | Minimum offspring count per epoch                   |
+| `-max-to-mate`   | `50`    | Maximum offspring count per epoch                   |
+| `-mutation-rate` | `0.03`  | Mutation probability per offspring (`0.0` to `1.0`) |
+| `-seed`          | `-1`    | RNG seed (`< 0` uses current time)                  |
+| `-trace`         | `false` | Set log level to trace                              |
+| `-debug`         | `false` | Set log level to debug                              |
+| `-warn`          | `false` | Set log level to warn                               |
+| `-error`         | `false` | Set log level to error                              |
+
+## Reproducible Runs
+
+Use a fixed `-seed` to make runs deterministic.
+
+```bash
+go run . -size 14 -seed 2026
+```
+
+The configured seed and mutation rate are written to logs at startup.
+
+## Output
+
+- The terminal prints the final board.
+- Each queen cell shows its conflict count (`00` means no conflicts).
+- Structured logs are written to `app.log`.
+
+Example solved `8x8` board:
 
 ```
 ╔════╤════╤════╤════╤════╤════╤════╤════╗
@@ -24,40 +76,17 @@ An example of a standard sized (8x8) chess board with 8 queens placed on it with
 ╚════╧════╧════╧════╧════╧════╧════╧════╝
 ```
 
-An example of a 16x16 sized chess board with 16 queens placed on it without conflicts with each other:
+## Development
 
+Run tests:
+
+```bash
+go test ./...
 ```
-╔════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╤════╗
-║    │    │    │    │    │    │    │    │    │    │    │    │    │    │    │ 00 ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │ 00 │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │    │ 00 │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │ 00 │    │    │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │ 00 │    │    │    │    │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │    │    │ 00 │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │ 00 │    │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │ 00 │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │    │    │    │    │ 00 │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │ 00 │    │    │    │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │    │    │    │ 00 │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │    │    │    │    │    │ 00 │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │ 00 │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │ 00 │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║ 00 │    │    │    │    │    │    │    │    │    │    │    │    │    │    │    ║
-╟────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────┼────╢
-║    │    │    │    │    │    │    │    │    │ 00 │    │    │    │    │    │    ║
-╚════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╧════╝
+
+Run benchmarks:
+
+```bash
+go test -run '^$' -bench PMX -benchmem ./...
+go test -run '^$' -bench CountConflicts -benchmem ./...
 ```

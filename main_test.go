@@ -9,12 +9,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func runSetLogLevelFromArgs(t *testing.T, args ...string) zerolog.Level {
+func runParseFlagsFromArgs(t *testing.T, args ...string) RuntimeConfig {
 	t.Helper()
 
 	oldCommandLine := flag.CommandLine
 	oldArgs := os.Args
-	oldLevel := zerolog.GlobalLevel()
 
 	programName := "test"
 	if len(oldArgs) > 0 {
@@ -25,14 +24,12 @@ func runSetLogLevelFromArgs(t *testing.T, args ...string) zerolog.Level {
 	flag.CommandLine.SetOutput(io.Discard)
 	os.Args = append([]string{programName}, args...)
 
-	setLogLevelFromFlags()
-	got := zerolog.GlobalLevel()
+	config := parseFlags()
 
 	flag.CommandLine = oldCommandLine
 	os.Args = oldArgs
-	zerolog.SetGlobalLevel(oldLevel)
 
-	return got
+	return config
 }
 
 func TestSetLogLevelFromFlags(t *testing.T) {
@@ -51,10 +48,38 @@ func TestSetLogLevelFromFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := runSetLogLevelFromArgs(t, tt.args...)
+			config := runParseFlagsFromArgs(t, tt.args...)
+			got := config.logLevel
 			if got != tt.want {
 				t.Fatalf("setLogLevelFromFlags(%v) = %v, want %v", tt.args, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRuntimeFlags(t *testing.T) {
+	config := runParseFlagsFromArgs(
+		t,
+		"-size", "8",
+		"-population", "1000",
+		"-max-epochs", "120",
+		"-min-to-mate", "5",
+		"-max-to-mate", "15",
+	)
+
+	if config.boardSize != 8 {
+		t.Fatalf("boardSize = %d, want 8", config.boardSize)
+	}
+	if config.initialPopulation != 1000 {
+		t.Fatalf("initialPopulation = %d, want 1000", config.initialPopulation)
+	}
+	if config.maxEpochs != 120 {
+		t.Fatalf("maxEpochs = %d, want 120", config.maxEpochs)
+	}
+	if config.minToMate != 5 {
+		t.Fatalf("minToMate = %d, want 5", config.minToMate)
+	}
+	if config.maxToMate != 15 {
+		t.Fatalf("maxToMate = %d, want 15", config.maxToMate)
 	}
 }

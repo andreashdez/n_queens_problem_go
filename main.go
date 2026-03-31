@@ -10,38 +10,80 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func setLogLevelFromFlags() {
-	trace := flag.Bool("trace", false, "sets log level to trace")
-	debug := flag.Bool("debug", false, "sets log level to debug")
-	warn := flag.Bool("warn", false, "sets log level to warn")
-	error := flag.Bool("error", false, "sets log level to error")
+type RuntimeConfig struct {
+	boardSize         int
+	initialPopulation int
+	maxEpochs         int
+	minToMate         int
+	maxToMate         int
+	logLevel          zerolog.Level
+}
+
+func parseFlags() RuntimeConfig {
+	traceLogLevel := flag.Bool("trace", false, "sets log level to trace")
+	debugLogLevel := flag.Bool("debug", false, "sets log level to debug")
+	warnLogLevel := flag.Bool("warn", false, "sets log level to warn")
+	errorLogLevel := flag.Bool("error", false, "sets log level to error")
+	boardSize := flag.Int("size", 14, "number of queens and board size")
+	initialPopulation := flag.Int("population", 40000, "initial population size")
+	maxEpochs := flag.Int("max-epochs", 5000, "maximum number of epochs to run")
+	minToMate := flag.Int("min-to-mate", 10, "minimum chromosomes to mate per epoch")
+	maxToMate := flag.Int("max-to-mate", 50, "maximum chromosomes to mate per epoch")
 	flag.Parse()
 
 	logLevel := zerolog.InfoLevel
 	switch {
-	case *trace:
+	case *traceLogLevel:
 		logLevel = zerolog.TraceLevel
-	case *debug:
+	case *debugLogLevel:
 		logLevel = zerolog.DebugLevel
-	case *warn:
+	case *warnLogLevel:
 		logLevel = zerolog.WarnLevel
-	case *error:
+	case *errorLogLevel:
 		logLevel = zerolog.ErrorLevel
 	}
 
-	zerolog.SetGlobalLevel(logLevel)
+	return RuntimeConfig{
+		boardSize:         *boardSize,
+		initialPopulation: *initialPopulation,
+		maxEpochs:         *maxEpochs,
+		minToMate:         *minToMate,
+		maxToMate:         *maxToMate,
+		logLevel:          logLevel,
+	}
 }
 
-func configureLogger() {
-	setLogLevelFromFlags()
+func validateRuntimeConfig(config RuntimeConfig) {
+	if config.boardSize <= 0 {
+		log.Fatal().Int("size", config.boardSize).Msg("size must be greater than zero")
+	}
+	if config.initialPopulation <= 0 {
+		log.Fatal().Int("population", config.initialPopulation).Msg("population must be greater than zero")
+	}
+	if config.maxEpochs <= 0 {
+		log.Fatal().Int("maxEpochs", config.maxEpochs).Msg("max epochs must be greater than zero")
+	}
+	if config.minToMate <= 0 {
+		log.Fatal().Int("minToMate", config.minToMate).Msg("minimum mates must be greater than zero")
+	}
+	if config.maxToMate < config.minToMate {
+		log.
+			Fatal().
+			Int("minToMate", config.minToMate).
+			Int("maxToMate", config.maxToMate).
+			Msg("maximum mates must be greater than or equal to minimum mates")
+	}
+}
+
+func configureLogger(logLevel zerolog.Level) {
+	zerolog.SetGlobalLevel(logLevel)
 
 	logFile := &lumberjack.Logger{
 		Filename:   "app.log",
-		MaxSize:    10, // MB
+		MaxSize:    10,
 		MaxBackups: 3,
-		MaxAge:     28, // days
+		MaxAge:     28,
 	}
-
 	log.Logger = zerolog.New(logFile).With().Timestamp().Logger()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
@@ -51,10 +93,18 @@ func configureLogger() {
 }
 
 func main() {
-	configureLogger()
+	config := parseFlags()
+	validateRuntimeConfig(config)
+	configureLogger(config.logLevel)
 
 	log.Info().Msg("start n_queens_problem")
-	ga := BuildGeneticAlgorithm(10, 40000)
+	ga := BuildGeneticAlgorithm(
+		config.boardSize,
+		config.initialPopulation,
+		config.maxEpochs,
+		config.minToMate,
+		config.maxToMate,
+	)
 	log.Info().Msg("done building genetic algorithm")
 	bestChromosome := ga.RunAlgorithm()
 

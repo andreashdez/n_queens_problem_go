@@ -9,7 +9,10 @@ import (
 )
 
 type GeneticAlgorithm struct {
-	population []Chromosome
+	population        []Chromosome
+	maxEpochs         int
+	minToMatePerEpoch int
+	maxToMatePerEpoch int
 }
 
 func (ga GeneticAlgorithm) getBestChromosome() Chromosome {
@@ -68,7 +71,10 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 	if len(ga.population) == 0 {
 		return
 	}
-	mateAmount := rand.Intn(maxToMate-minToMate) + minToMate
+	mateAmount := minToMate
+	if maxToMate > minToMate {
+		mateAmount = rand.Intn(maxToMate-minToMate+1) + minToMate
+	}
 	fitnessSum := 0.0
 	for _, v := range ga.population {
 		fitnessSum += v.fitness
@@ -179,7 +185,7 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 	epochCounter := 0
 	for {
 		epochCounter += 1
-		ga.mateRandomChromosomes(10, 50)
+		ga.mateRandomChromosomes(ga.minToMatePerEpoch, ga.maxToMatePerEpoch)
 		ga.calcFitness()
 		bestConflictsSum := ga.getBestChromosome().conflictsSum
 		log.
@@ -191,18 +197,23 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 		if bestConflictsSum == 0 {
 			return ga.getBestChromosome()
 		}
-		if epochCounter > 5000 {
+		if epochCounter > ga.maxEpochs {
 			return ga.getBestChromosome()
 		}
 	}
 }
 
-func BuildGeneticAlgorithm(size int, initialPopulation int) GeneticAlgorithm {
+func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int) GeneticAlgorithm {
 	population := make([]Chromosome, initialPopulation)
 	for i := range initialPopulation {
 		positions := GenerateDistinctRandomValues(size)
 		chromosome := NewChromosome(positions)
 		population[i] = *chromosome
 	}
-	return GeneticAlgorithm{population}
+	return GeneticAlgorithm{
+		population:        population,
+		maxEpochs:         maxEpochs,
+		minToMatePerEpoch: minToMate,
+		maxToMatePerEpoch: maxToMate,
+	}
 }

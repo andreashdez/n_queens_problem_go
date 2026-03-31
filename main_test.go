@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"io"
+	"math"
 	"os"
 	"testing"
 
@@ -65,6 +66,8 @@ func TestRuntimeFlags(t *testing.T) {
 		"-max-epochs", "120",
 		"-min-to-mate", "5",
 		"-max-to-mate", "15",
+		"-mutation-rate", "0.05",
+		"-seed", "1234",
 	)
 
 	if config.boardSize != 8 {
@@ -81,5 +84,11 @@ func TestRuntimeFlags(t *testing.T) {
 	}
 	if config.maxToMate != 15 {
 		t.Fatalf("maxToMate = %d, want 15", config.maxToMate)
+	}
+	if math.Abs(config.mutationRate-0.05) > 1e-9 {
+		t.Fatalf("mutationRate = %f, want 0.05", config.mutationRate)
+	}
+	if config.seed != 1234 {
+		t.Fatalf("seed = %d, want 1234", config.seed)
 	}
 }

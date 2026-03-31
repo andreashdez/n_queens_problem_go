@@ -2,6 +2,8 @@ package main
 
 import (
 	"math"
+	"math/rand"
+	"slices"
 	"testing"
 )
 
@@ -64,5 +66,41 @@ func TestSelectRandomChromosomeReturnsPopulationValue(t *testing.T) {
 	selected := ga.selectRandomChromosome(10)
 	if len(selected.positions) == 0 || selected.positions[0] != 0 {
 		t.Fatalf("selectRandomChromosome returned %v, want first chromosome", selected.positions)
+	}
+}
+
+func TestMutateGenesRateZeroDoesNotMutate(t *testing.T) {
+	ga := GeneticAlgorithm{mutationRate: 0}
+	genes := []int{0, 1, 2, 3}
+	before := append([]int(nil), genes...)
+
+	mutated := ga.mutateGenes(genes)
+
+	if mutated {
+		t.Fatalf("mutateGenes returned true, want false")
+	}
+	if !slices.Equal(genes, before) {
+		t.Fatalf("genes changed from %v to %v with zero mutation rate", before, genes)
+	}
+}
+
+func TestMutateGenesRateOneSwapsTwoValues(t *testing.T) {
+	ga := GeneticAlgorithm{mutationRate: 1}
+	genes := []int{0, 1, 2, 3, 4, 5}
+	before := append([]int(nil), genes...)
+	rand.Seed(7)
+
+	mutated := ga.mutateGenes(genes)
+
+	if !mutated {
+		t.Fatalf("mutateGenes returned false, want true")
+	}
+	if slices.Equal(genes, before) {
+		t.Fatalf("genes did not change after mutation: %v", genes)
+	}
+	slices.Sort(genes)
+	slices.Sort(before)
+	if !slices.Equal(genes, before) {
+		t.Fatalf("mutation changed gene set, got %v want permutation of %v", genes, before)
 	}
 }

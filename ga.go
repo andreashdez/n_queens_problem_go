@@ -13,6 +13,7 @@ type GeneticAlgorithm struct {
 	maxEpochs         int
 	minToMatePerEpoch int
 	maxToMatePerEpoch int
+	mutationRate      float64
 }
 
 func (ga GeneticAlgorithm) getBestChromosome() Chromosome {
@@ -118,8 +119,30 @@ func (ga GeneticAlgorithm) mateChromosomes(parentOne Chromosome, parentTwo Chrom
 		Ints("parentTwo", parentTwo.positions).
 		Msg("mate random chromosomes")
 	childGenes := ga.pmx(parentOne.positions, parentTwo.positions)
+	ga.mutateGenes(childGenes)
 	child := NewChromosome(childGenes)
 	return child
+}
+
+func (ga GeneticAlgorithm) mutateGenes(genes []int) bool {
+	if ga.mutationRate <= 0 || len(genes) < 2 {
+		return false
+	}
+	if ga.mutationRate < 1 && rand.Float64() >= ga.mutationRate {
+		return false
+	}
+	i := rand.Intn(len(genes))
+	j := rand.Intn(len(genes) - 1)
+	if j >= i {
+		j++
+	}
+	genes[i], genes[j] = genes[j], genes[i]
+	log.
+		Trace().
+		Int("leftIndex", i).
+		Int("rightIndex", j).
+		Msg("mutated child genes")
+	return true
 }
 
 func (ga GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
@@ -203,7 +226,7 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 	}
 }
 
-func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int) GeneticAlgorithm {
+func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int, mutationRate float64) GeneticAlgorithm {
 	population := make([]Chromosome, initialPopulation)
 	for i := range initialPopulation {
 		positions := GenerateDistinctRandomValues(size)
@@ -215,5 +238,6 @@ func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minTo
 		maxEpochs:         maxEpochs,
 		minToMatePerEpoch: minToMate,
 		maxToMatePerEpoch: maxToMate,
+		mutationRate:      mutationRate,
 	}
 }

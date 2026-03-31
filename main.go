@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"math/rand"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -16,6 +18,8 @@ type RuntimeConfig struct {
 	maxEpochs         int
 	minToMate         int
 	maxToMate         int
+	mutationRate      float64
+	seed              int64
 	logLevel          zerolog.Level
 }
 
@@ -29,6 +33,8 @@ func parseFlags() RuntimeConfig {
 	maxEpochs := flag.Int("max-epochs", 5000, "maximum number of epochs to run")
 	minToMate := flag.Int("min-to-mate", 10, "minimum chromosomes to mate per epoch")
 	maxToMate := flag.Int("max-to-mate", 50, "maximum chromosomes to mate per epoch")
+	mutationRate := flag.Float64("mutation-rate", 0.03, "mutation probability per offspring (0.0 to 1.0)")
+	seed := flag.Int64("seed", -1, "random seed; set negative value to use current time")
 	flag.Parse()
 
 	logLevel := zerolog.InfoLevel
@@ -49,6 +55,8 @@ func parseFlags() RuntimeConfig {
 		maxEpochs:         *maxEpochs,
 		minToMate:         *minToMate,
 		maxToMate:         *maxToMate,
+		mutationRate:      *mutationRate,
+		seed:              *seed,
 		logLevel:          logLevel,
 	}
 }
@@ -72,6 +80,12 @@ func validateRuntimeConfig(config RuntimeConfig) {
 			Int("minToMate", config.minToMate).
 			Int("maxToMate", config.maxToMate).
 			Msg("maximum mates must be greater than or equal to minimum mates")
+	}
+	if config.mutationRate < 0 || config.mutationRate > 1 {
+		log.
+			Fatal().
+			Float64("mutationRate", config.mutationRate).
+			Msg("mutation rate must be between 0 and 1")
 	}
 }
 
@@ -97,13 +111,25 @@ func main() {
 	validateRuntimeConfig(config)
 	configureLogger(config.logLevel)
 
+	seed := config.seed
+	if seed < 0 {
+		seed = time.Now().UnixNano()
+	}
+	rand.Seed(seed)
+
 	log.Info().Msg("start n_queens_problem")
+	log.
+		Info().
+		Int64("seed", seed).
+		Float64("mutationRate", config.mutationRate).
+		Msg("configured random seed and mutation rate")
 	ga := BuildGeneticAlgorithm(
 		config.boardSize,
 		config.initialPopulation,
 		config.maxEpochs,
 		config.minToMate,
 		config.maxToMate,
+		config.mutationRate,
 	)
 	log.Info().Msg("done building genetic algorithm")
 	bestChromosome := ga.RunAlgorithm()

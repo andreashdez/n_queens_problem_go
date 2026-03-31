@@ -81,28 +81,28 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 	for range mateAmount {
 		parentOne := ga.selectRandomChromosome(fitnessSum)
 		parentTwo := ga.selectRandomChromosome(fitnessSum)
-		child := ga.mateChromosomes(*parentOne, *parentTwo)
+		child := ga.mateChromosomes(parentOne, parentTwo)
 		ga.population = append(ga.population, *child)
 	}
 }
 
-func (ga GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) *Chromosome {
+func (ga GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) Chromosome {
 	if len(ga.population) == 0 {
-		return nil
+		return Chromosome{}
 	}
 	if fitnessSum <= 0 || math.IsNaN(fitnessSum) || math.IsInf(fitnessSum, 0) {
 		randomIndex := rand.Intn(len(ga.population))
-		return &ga.population[randomIndex]
+		return ga.population[randomIndex]
 	}
 	rouletteSpin := rand.Float64() * fitnessSum
 	selectionRank := 0.0
-	for i := range ga.population {
-		selectionRank += ga.population[i].fitness
+	for _, value := range ga.population {
+		selectionRank += value.fitness
 		if selectionRank > rouletteSpin {
-			return &ga.population[i]
+			return value
 		}
 	}
-	return &ga.population[0]
+	return ga.population[0]
 }
 
 func (ga GeneticAlgorithm) mateChromosomes(parentOne Chromosome, parentTwo Chromosome) *Chromosome {

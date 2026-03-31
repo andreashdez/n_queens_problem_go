@@ -43,17 +43,17 @@ func TestSelectRandomChromosomeFallsBackForInvalidFitnessSum(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			selected := ga.selectRandomChromosome(tt.fitnessSum)
-			if selected == nil {
-				t.Fatalf("selectRandomChromosome(%v) returned nil", tt.fitnessSum)
+			if len(selected.positions) == 0 {
+				t.Fatalf("selectRandomChromosome(%v) returned empty chromosome", tt.fitnessSum)
 			}
-			if selected != &ga.population[0] && selected != &ga.population[1] {
-				t.Fatalf("selectRandomChromosome(%v) returned pointer outside population", tt.fitnessSum)
+			if selected.positions[0] != 0 && selected.positions[0] != 1 {
+				t.Fatalf("selectRandomChromosome(%v) returned value outside population", tt.fitnessSum)
 			}
 		})
 	}
 }
 
-func TestSelectRandomChromosomeReturnsPopulationPointer(t *testing.T) {
+func TestSelectRandomChromosomeReturnsPopulationValue(t *testing.T) {
 	ga := GeneticAlgorithm{
 		population: []Chromosome{
 			{positions: []int{0}, fitness: 10},
@@ -62,7 +62,7 @@ func TestSelectRandomChromosomeReturnsPopulationPointer(t *testing.T) {
 	}
 
 	selected := ga.selectRandomChromosome(10)
-	if selected != &ga.population[0] {
-		t.Fatalf("selectRandomChromosome returned %p, want %p", selected, &ga.population[0])
+	if len(selected.positions) == 0 || selected.positions[0] != 0 {
+		t.Fatalf("selectRandomChromosome returned %v, want first chromosome", selected.positions)
 	}
 }

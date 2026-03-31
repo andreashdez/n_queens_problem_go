@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"slices"
 	"testing"
+	"time"
 )
 
 func TestCalcFitnessAssignsUniformValuesWhenDiffIsZero(t *testing.T) {
@@ -123,4 +124,119 @@ func TestPMXReturnsPermutation(t *testing.T) {
 			t.Fatalf("pmx child is not a permutation: %v", child)
 		}
 	}
+}
+
+func TestRunAlgorithmDeterministicWithSameSeed(t *testing.T) {
+	seed := int64(1234)
+	gaOne := BuildGeneticAlgorithm(8, 128, 150, 4, 8, 0.05, rand.New(rand.NewSource(seed)))
+	gaTwo := BuildGeneticAlgorithm(8, 128, 150, 4, 8, 0.05, rand.New(rand.NewSource(seed)))
+
+	bestOne := gaOne.RunAlgorithm()
+	bestTwo := gaTwo.RunAlgorithm()
+
+	if bestOne.conflictsSum != bestTwo.conflictsSum {
+		t.Fatalf("best conflicts differ for same seed: %d vs %d", bestOne.conflictsSum, bestTwo.conflictsSum)
+	}
+	if !slices.Equal(bestOne.positions, bestTwo.positions) {
+		t.Fatalf("best positions differ for same seed: %v vs %v", bestOne.positions, bestTwo.positions)
+	}
+	if !slices.Equal(bestOne.conflicts, bestTwo.conflicts) {
+		t.Fatalf("best conflicts vector differ for same seed: %v vs %v", bestOne.conflicts, bestTwo.conflicts)
+	}
+}
+
+func TestBuildGeneticAlgorithmCreatesPermutationPopulation(t *testing.T) {
+	size := 12
+	populationSize := 40
+	ga := BuildGeneticAlgorithm(size, populationSize, 50, 2, 5, 0.05, rand.New(rand.NewSource(99)))
+
+	if len(ga.population) != populationSize {
+		t.Fatalf("population size = %d, want %d", len(ga.population), populationSize)
+	}
+
+	for i, chromosome := range ga.population {
+		if len(chromosome.positions) != size {
+			t.Fatalf("population[%d] chromosome size = %d, want %d", i, len(chromosome.positions), size)
+		}
+		if !isPermutationOfRange(chromosome.positions, size) {
+			t.Fatalf("population[%d] is not a permutation: %v", i, chromosome.positions)
+		}
+	}
+}
+
+func TestMutateGenesPreservesPermutationAcrossSeeds(t *testing.T) {
+	base := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	for seed := 1; seed <= 50; seed++ {
+		ga := GeneticAlgorithm{mutationRate: 1, rng: rand.New(rand.NewSource(int64(seed)))}
+		genes := append([]int(nil), base...)
+
+		mutated := ga.mutateGenes(genes)
+		if !mutated {
+			t.Fatalf("seed %d: mutateGenes returned false, want true", seed)
+		}
+		if !isPermutationOfRange(genes, len(base)) {
+			t.Fatalf("seed %d: mutation produced non-permutation: %v", seed, genes)
+		}
+
+		differentPositions := 0
+		for i := range genes {
+			if genes[i] != base[i] {
+				differentPositions++
+			}
+		}
+		if differentPositions != 2 {
+			t.Fatalf("seed %d: mutation changed %d positions, want 2", seed, differentPositions)
+		}
+	}
+}
+
+func TestRunAlgorithmStopsAtMaxEpochsWithoutMating(t *testing.T) {
+	ga := BuildGeneticAlgorithm(3, 32, 1, 0, 0, 0, rand.New(rand.NewSource(77)))
+	initialBest := ga.getBestChromosome()
+
+	done := make(chan Chromosome, 1)
+	go func() {
+		done <- ga.RunAlgorithm()
+	}()
+
+	select {
+	case result := <-done:
+		if result.conflictsSum == 0 {
+			t.Fatalf("RunAlgorithm returned solved chromosome for size 3: %v", result.positions)
+		}
+		if result.conflictsSum != initialBest.conflictsSum {
+			t.Fatalf("best conflicts changed without mating: got %d want %d", result.conflictsSum, initialBest.conflictsSum)
+		}
+		if !slices.Equal(result.positions, initialBest.positions) {
+			t.Fatalf("best positions changed without mating: got %v want %v", result.positions, initialBest.positions)
+		}
+	case <-time.After(1 * time.Second):
+		t.Fatal("RunAlgorithm did not terminate at max epochs")
+	}
+}
+
+func TestRunAlgorithmKeepsPopulationBounded(t *testing.T) {
+	targetPopulation := 60
+	ga := BuildGeneticAlgorithm(8, targetPopulation, 20, 8, 12, 0.05, rand.New(rand.NewSource(101)))
+
+	_ = ga.RunAlgorithm()
+
+	if len(ga.population) != targetPopulation {
+		t.Fatalf("population size after RunAlgorithm = %d, want %d", len(ga.population), targetPopulation)
+	}
+}
+
+func isPermutationOfRange(values []int, size int) bool {
+	if len(values) != size {
+		return false
+	}
+	seen := make([]bool, size)
+	for _, value := range values {
+		if value < 0 || value >= size || seen[value] {
+			return false
+		}
+		seen[value] = true
+	}
+	return true
 }

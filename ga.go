@@ -3,9 +3,9 @@ package main
 import (
 	"math"
 	"math/rand"
+	"slices"
 
 	"github.com/rs/zerolog/log"
-	"slices"
 )
 
 type GeneticAlgorithm struct {
@@ -36,6 +36,13 @@ func (ga GeneticAlgorithm) calcFitness() {
 	mostConflicts := float64(ga.getWorstChromosome().conflictsSum)
 	leastConflicts := float64(ga.getBestChromosome().conflictsSum)
 	diffConflicts := mostConflicts - leastConflicts
+	if diffConflicts == 0 {
+		log.Debug().Msg("all chromosomes have equal conflicts; assigning uniform fitness")
+		for i := range ga.population {
+			ga.population[i].fitness = 1
+		}
+		return
+	}
 	log.
 		Debug().
 		Float64("mostConflicts", mostConflicts).
@@ -45,6 +52,9 @@ func (ga GeneticAlgorithm) calcFitness() {
 	for i, c := range ga.population {
 		conflictsSum := float64(c.conflictsSum)
 		fitness := math.Pow(mostConflicts-conflictsSum, 3.0) / math.Pow(diffConflicts, 3.0)
+		if math.IsNaN(fitness) || math.IsInf(fitness, 0) {
+			fitness = 0
+		}
 		ga.population[i].fitness = fitness
 		log.
 			Trace().
@@ -55,6 +65,9 @@ func (ga GeneticAlgorithm) calcFitness() {
 }
 
 func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) {
+	if len(ga.population) == 0 {
+		return
+	}
 	mateAmount := rand.Intn(maxToMate-minToMate) + minToMate
 	fitnessSum := 0.0
 	for _, v := range ga.population {
@@ -74,12 +87,19 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 }
 
 func (ga GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) *Chromosome {
-	rouletteSpin := float64(rand.Intn(int(fitnessSum)))
+	if len(ga.population) == 0 {
+		return nil
+	}
+	if fitnessSum <= 0 || math.IsNaN(fitnessSum) || math.IsInf(fitnessSum, 0) {
+		randomIndex := rand.Intn(len(ga.population))
+		return &ga.population[randomIndex]
+	}
+	rouletteSpin := rand.Float64() * fitnessSum
 	selectionRank := 0.0
-	for _, value := range ga.population {
-		selectionRank += value.fitness
+	for i := range ga.population {
+		selectionRank += ga.population[i].fitness
 		if selectionRank > rouletteSpin {
-			return &value
+			return &ga.population[i]
 		}
 	}
 	return &ga.population[0]

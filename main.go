@@ -2,11 +2,12 @@ package main
 
 import (
 	"flag"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"path/filepath"
 	"strconv"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func setLogLevelFromFlags() {
@@ -16,19 +17,19 @@ func setLogLevelFromFlags() {
 	error := flag.Bool("error", false, "sets log level to error")
 	flag.Parse()
 
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if *trace {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	logLevel := zerolog.InfoLevel
+	switch {
+	case *trace:
+		logLevel = zerolog.TraceLevel
+	case *debug:
+		logLevel = zerolog.DebugLevel
+	case *warn:
+		logLevel = zerolog.WarnLevel
+	case *error:
+		logLevel = zerolog.ErrorLevel
 	}
-	if *debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-	if *warn {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-	if *error {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
+
+	zerolog.SetGlobalLevel(logLevel)
 }
 
 func configureLogger() {

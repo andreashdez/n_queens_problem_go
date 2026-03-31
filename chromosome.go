@@ -28,8 +28,11 @@ func (c *Chromosome) SetFitness(fitness float64) {
 	c.fitness = fitness
 }
 
-func GenerateDistinctRandomValues(size int) []int {
-	return rand.Perm(size)
+func GenerateDistinctRandomValues(rng *rand.Rand, size int) []int {
+	if rng == nil {
+		rng = rand.New(rand.NewSource(1))
+	}
+	return rng.Perm(size)
 }
 
 func countConflicts(positions []int) []int {

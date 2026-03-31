@@ -85,10 +85,9 @@ func TestMutateGenesRateZeroDoesNotMutate(t *testing.T) {
 }
 
 func TestMutateGenesRateOneSwapsTwoValues(t *testing.T) {
-	ga := GeneticAlgorithm{mutationRate: 1}
+	ga := GeneticAlgorithm{mutationRate: 1, rng: rand.New(rand.NewSource(7))}
 	genes := []int{0, 1, 2, 3, 4, 5}
 	before := append([]int(nil), genes...)
-	rand.Seed(7)
 
 	mutated := ga.mutateGenes(genes)
 
@@ -113,7 +112,7 @@ func TestPMXReturnsPermutation(t *testing.T) {
 	slices.Sort(want)
 
 	for i := 0; i < 100; i++ {
-		rand.Seed(int64(i + 1))
+		ga.rng = rand.New(rand.NewSource(int64(i + 1)))
 		child := ga.pmx(parentOne, parentTwo)
 		if len(child) != len(parentOne) {
 			t.Fatalf("pmx child len = %d, want %d", len(child), len(parentOne))

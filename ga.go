@@ -15,6 +15,14 @@ type GeneticAlgorithm struct {
 	minToMatePerEpoch int
 	maxToMatePerEpoch int
 	mutationRate      float64
+	rng               *rand.Rand
+}
+
+func (ga *GeneticAlgorithm) randSource() *rand.Rand {
+	if ga.rng == nil {
+		ga.rng = rand.New(rand.NewSource(1))
+	}
+	return ga.rng
 }
 
 func (ga *GeneticAlgorithm) getBestChromosome() Chromosome {
@@ -92,9 +100,10 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 	if len(ga.population) == 0 {
 		return
 	}
+	rng := ga.randSource()
 	mateAmount := minToMate
 	if maxToMate > minToMate {
-		mateAmount = rand.Intn(maxToMate-minToMate+1) + minToMate
+		mateAmount = rng.Intn(maxToMate-minToMate+1) + minToMate
 	}
 	fitnessSum := 0.0
 	for _, v := range ga.population {
@@ -117,11 +126,12 @@ func (ga *GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) Chromosom
 	if len(ga.population) == 0 {
 		return Chromosome{}
 	}
+	rng := ga.randSource()
 	if fitnessSum <= 0 || math.IsNaN(fitnessSum) || math.IsInf(fitnessSum, 0) {
-		randomIndex := rand.Intn(len(ga.population))
+		randomIndex := rng.Intn(len(ga.population))
 		return ga.population[randomIndex]
 	}
-	rouletteSpin := rand.Float64() * fitnessSum
+	rouletteSpin := rng.Float64() * fitnessSum
 	selectionRank := 0.0
 	for _, value := range ga.population {
 		selectionRank += value.fitness
@@ -148,11 +158,12 @@ func (ga *GeneticAlgorithm) mutateGenes(genes []int) bool {
 	if ga.mutationRate <= 0 || len(genes) < 2 {
 		return false
 	}
-	if ga.mutationRate < 1 && rand.Float64() >= ga.mutationRate {
+	rng := ga.randSource()
+	if ga.mutationRate < 1 && rng.Float64() >= ga.mutationRate {
 		return false
 	}
-	i := rand.Intn(len(genes))
-	j := rand.Intn(len(genes) - 1)
+	i := rng.Intn(len(genes))
+	j := rng.Intn(len(genes) - 1)
 	if j >= i {
 		j++
 	}
@@ -166,10 +177,11 @@ func (ga *GeneticAlgorithm) mutateGenes(genes []int) bool {
 }
 
 func (ga *GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
+	rng := ga.randSource()
 	chromosomeSize := len(parentOne)
 	chromosomeHalfSize := chromosomeSize / 2
-	pointOne := rand.Intn(chromosomeHalfSize)
-	pointTwo := rand.Intn(chromosomeSize-chromosomeHalfSize) + chromosomeHalfSize
+	pointOne := rng.Intn(chromosomeHalfSize)
+	pointTwo := rng.Intn(chromosomeSize-chromosomeHalfSize) + chromosomeHalfSize
 	parentTwoIndex := make([]int, chromosomeSize)
 	for i, value := range parentTwo {
 		parentTwoIndex[value] = i
@@ -253,10 +265,13 @@ func (ga *GeneticAlgorithm) RunAlgorithm() Chromosome {
 	}
 }
 
-func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int, mutationRate float64) *GeneticAlgorithm {
+func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int, mutationRate float64, rng *rand.Rand) *GeneticAlgorithm {
+	if rng == nil {
+		rng = rand.New(rand.NewSource(1))
+	}
 	population := make([]Chromosome, initialPopulation)
 	for i := range initialPopulation {
-		positions := GenerateDistinctRandomValues(size)
+		positions := GenerateDistinctRandomValues(rng, size)
 		chromosome := NewChromosome(positions)
 		population[i] = *chromosome
 	}
@@ -267,5 +282,6 @@ func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minTo
 		minToMatePerEpoch: minToMate,
 		maxToMatePerEpoch: maxToMate,
 		mutationRate:      mutationRate,
+		rng:               rng,
 	}
 }

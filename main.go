@@ -115,7 +115,7 @@ func main() {
 	if seed < 0 {
 		seed = time.Now().UnixNano()
 	}
-	rand.Seed(seed)
+	rng := rand.New(rand.NewSource(seed))
 
 	log.Info().Msg("start n_queens_problem")
 	log.
@@ -130,6 +130,7 @@ func main() {
 		config.minToMate,
 		config.maxToMate,
 		config.mutationRate,
+		rng,
 	)
 	log.Info().Msg("done building genetic algorithm")
 	bestChromosome := ga.RunAlgorithm()

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"math/rand"
 	"slices"
 	"testing"
 )
 
 func TestRandomGeneration(t *testing.T) {
-	result := GenerateDistinctRandomValues(8)
+	rng := rand.New(rand.NewSource(7))
+	result := GenerateDistinctRandomValues(rng, 8)
 	if !slices.Contains(result, 0) {
 		t.Fatalf(`random values missing value '0', error`)
 	}

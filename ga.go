@@ -10,13 +10,14 @@ import (
 
 type GeneticAlgorithm struct {
 	population        []Chromosome
+	targetPopulation  int
 	maxEpochs         int
 	minToMatePerEpoch int
 	maxToMatePerEpoch int
 	mutationRate      float64
 }
 
-func (ga GeneticAlgorithm) getBestChromosome() Chromosome {
+func (ga *GeneticAlgorithm) getBestChromosome() Chromosome {
 	bestChromosome := ga.population[0]
 	for _, chromosome := range ga.population {
 		if chromosome.conflictsSum < bestChromosome.conflictsSum {
@@ -26,7 +27,7 @@ func (ga GeneticAlgorithm) getBestChromosome() Chromosome {
 	return bestChromosome
 }
 
-func (ga GeneticAlgorithm) getWorstChromosome() Chromosome {
+func (ga *GeneticAlgorithm) getWorstChromosome() Chromosome {
 	bestChromosome := ga.population[0]
 	for _, chromosome := range ga.population {
 		if chromosome.conflictsSum > bestChromosome.conflictsSum {
@@ -36,7 +37,7 @@ func (ga GeneticAlgorithm) getWorstChromosome() Chromosome {
 	return bestChromosome
 }
 
-func (ga GeneticAlgorithm) calcFitness() {
+func (ga *GeneticAlgorithm) calcFitness() {
 	mostConflicts := float64(ga.getWorstChromosome().conflictsSum)
 	leastConflicts := float64(ga.getBestChromosome().conflictsSum)
 	diffConflicts := mostConflicts - leastConflicts
@@ -68,6 +69,25 @@ func (ga GeneticAlgorithm) calcFitness() {
 	}
 }
 
+func (ga *GeneticAlgorithm) trimPopulation() {
+	if ga.targetPopulation <= 0 || len(ga.population) <= ga.targetPopulation {
+		return
+	}
+
+	slices.SortFunc(ga.population, func(left Chromosome, right Chromosome) int {
+		switch {
+		case left.conflictsSum < right.conflictsSum:
+			return -1
+		case left.conflictsSum > right.conflictsSum:
+			return 1
+		default:
+			return 0
+		}
+	})
+
+	ga.population = append([]Chromosome(nil), ga.population[:ga.targetPopulation]...)
+}
+
 func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) {
 	if len(ga.population) == 0 {
 		return
@@ -93,7 +113,7 @@ func (ga *GeneticAlgorithm) mateRandomChromosomes(minToMate int, maxToMate int) 
 	}
 }
 
-func (ga GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) Chromosome {
+func (ga *GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) Chromosome {
 	if len(ga.population) == 0 {
 		return Chromosome{}
 	}
@@ -112,7 +132,7 @@ func (ga GeneticAlgorithm) selectRandomChromosome(fitnessSum float64) Chromosome
 	return ga.population[0]
 }
 
-func (ga GeneticAlgorithm) mateChromosomes(parentOne Chromosome, parentTwo Chromosome) *Chromosome {
+func (ga *GeneticAlgorithm) mateChromosomes(parentOne Chromosome, parentTwo Chromosome) *Chromosome {
 	log.
 		Trace().
 		Ints("parentOne", parentOne.positions).
@@ -124,7 +144,7 @@ func (ga GeneticAlgorithm) mateChromosomes(parentOne Chromosome, parentTwo Chrom
 	return child
 }
 
-func (ga GeneticAlgorithm) mutateGenes(genes []int) bool {
+func (ga *GeneticAlgorithm) mutateGenes(genes []int) bool {
 	if ga.mutationRate <= 0 || len(genes) < 2 {
 		return false
 	}
@@ -145,7 +165,7 @@ func (ga GeneticAlgorithm) mutateGenes(genes []int) bool {
 	return true
 }
 
-func (ga GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
+func (ga *GeneticAlgorithm) pmx(parentOne []int, parentTwo []int) []int {
 	chromosomeSize := len(parentOne)
 	chromosomeHalfSize := chromosomeSize / 2
 	pointOne := rand.Intn(chromosomeHalfSize)
@@ -203,12 +223,13 @@ func findPosition(index int, parentOne []int, parentTwo []int, child []int) int 
 	return position
 }
 
-func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
+func (ga *GeneticAlgorithm) RunAlgorithm() Chromosome {
 	ga.calcFitness()
 	epochCounter := 0
 	for {
 		epochCounter += 1
 		ga.mateRandomChromosomes(ga.minToMatePerEpoch, ga.maxToMatePerEpoch)
+		ga.trimPopulation()
 		ga.calcFitness()
 		bestConflictsSum := ga.getBestChromosome().conflictsSum
 		log.
@@ -226,15 +247,16 @@ func (ga GeneticAlgorithm) RunAlgorithm() Chromosome {
 	}
 }
 
-func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int, mutationRate float64) GeneticAlgorithm {
+func BuildGeneticAlgorithm(size int, initialPopulation int, maxEpochs int, minToMate int, maxToMate int, mutationRate float64) *GeneticAlgorithm {
 	population := make([]Chromosome, initialPopulation)
 	for i := range initialPopulation {
 		positions := GenerateDistinctRandomValues(size)
 		chromosome := NewChromosome(positions)
 		population[i] = *chromosome
 	}
-	return GeneticAlgorithm{
+	return &GeneticAlgorithm{
 		population:        population,
+		targetPopulation:  initialPopulation,
 		maxEpochs:         maxEpochs,
 		minToMatePerEpoch: minToMate,
 		maxToMatePerEpoch: maxToMate,

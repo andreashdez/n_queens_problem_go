@@ -38,6 +38,41 @@ go run . -size 8 -population 1000 -max-epochs 1000 -min-to-mate 5 -max-to-mate 2
 | `-warn`          | `false` | Set log level to warn                               |
 | `-error`         | `false` | Set log level to error                              |
 
+## Parameter Tuning Guide
+
+Start with these presets, then adjust from there:
+
+- Small boards (`N=8` to `N=16`)
+  - `-population 500` to `2000`
+  - `-max-epochs 500` to `2000`
+  - `-min-to-mate 4` to `8`
+  - `-max-to-mate 10` to `30`
+  - `-mutation-rate 0.02` to `0.08`
+- Larger boards (`N>=32`)
+  - `-population 10000` to `50000`
+  - `-max-epochs 3000` to `10000`
+  - `-min-to-mate 10` to `30`
+  - `-max-to-mate 30` to `120`
+  - `-mutation-rate 0.03` to `0.12`
+
+Rules of thumb:
+
+- If the best conflict score plateaus early, increase `-mutation-rate` slightly.
+- If progress is noisy, reduce `-mutation-rate` slightly and increase `-population`.
+- If runs are too slow, reduce `-population` first, then `-max-epochs`.
+- Keep `-max-to-mate` noticeably higher than `-min-to-mate` for diversity.
+- For difficult sizes, run multiple seeds and keep the best result.
+
+Example commands:
+
+```bash
+# Fast local run for 8x8
+go run . -size 8 -population 1000 -max-epochs 1200 -min-to-mate 5 -max-to-mate 20 -mutation-rate 0.05 -seed 42
+
+# Stronger run for 32x32
+go run . -size 32 -population 20000 -max-epochs 6000 -min-to-mate 15 -max-to-mate 80 -mutation-rate 0.06 -seed 42
+```
+
 ## Reproducible Runs
 
 Use a fixed `-seed` to make runs deterministic.
